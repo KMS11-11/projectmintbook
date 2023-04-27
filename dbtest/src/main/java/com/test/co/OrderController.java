@@ -3,7 +3,6 @@ package com.test.co;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -25,7 +24,6 @@ import com.test.mo.OrderItem;
 import com.test.mo.DTO.OrderDTO;
 import com.test.mo.DTO.OrderDetailDTO;
 import com.test.se.BookService;
-import com.test.se.CartItemService;
 import com.test.se.CartService;
 import com.test.se.MemberService;
 import com.test.se.OrderItemService;
@@ -46,9 +44,6 @@ public class OrderController {
 	private CartService cartS;
 	
 	@Autowired
-	private CartItemService cartIS;
-	
-	@Autowired
 	private BookService bookS;
 	
 	//create
@@ -57,12 +52,13 @@ public class OrderController {
 		Order order=new Order();
 		Cart cart=cartS.findByMember_id(dto.getMid());
 		Member mem=memS.findById(dto.getMid());
-		Book book=new Book();
 		List<CartItem> carti=cart.getCartitems();
-		List<OrderItem> orderitems=new ArrayList<>();
 		int totalprice=0;
 		for(CartItem cartitem:carti) {
+			Book book=cartitem.getBook();
 			totalprice += cartitem.getQuantity()*cartitem.getBook().getPrice();
+			book.setHit(book.getHit()+cartitem.getQuantity());
+			bookS.save(book);
 		}
 		order.setBuyer(dto.getBuyer());
 		order.setBuyerAddress(dto.getBuyerAddress());
@@ -104,6 +100,7 @@ public class OrderController {
 		Order order=new Order();
 		Member mem=memS.findById(dto.getMid());
 		Book book=bookS.findById(dto.getBid());
+		book.setHit(book.getHit()+dto.getQuantity());
 		int total=book.getPrice()*dto.getQuantity();
 		order.setBuyer(dto.getBuyer());
 		order.setBuyerAddress(dto.getBuyerAddress());
@@ -131,6 +128,7 @@ public class OrderController {
 		item.setOrder(order);
 		item.setQuantity(dto.getQuantity());
 		ordIS.save(item);
+		bookS.save(book);
 		return new ResponseEntity<>(order,HttpStatus.OK);
 	}
 	
